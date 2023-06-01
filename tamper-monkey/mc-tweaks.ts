@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         MC-Tweaks
 // @namespace    mailto:eclawils@amazon.com
-// @version      0.1
-// @description  Various tweaks and improvements to Mission Control
+// @version      1.0
+// @description  Various tweaks and improvements to Mission Control including task notifications and higher visibility on new tasks
 // @author       Clayton Wilson
 // @match        https://na-mc-execute.corp.amazon.com/*
 // @icon         none
@@ -13,8 +13,9 @@
 const missionControlIcon =
   "https://d3fyhn76ojkw8f.cloudfront.net/static/Website/favicon.ico";
 
+// Display a desktop notification
 const showNotification = (title: string, body: string) => {
-  const notification = new Notification(title, {
+  new Notification(title, {
     body: body,
     icon: missionControlIcon,
     renotify: true,
@@ -25,9 +26,9 @@ const showNotification = (title: string, body: string) => {
 (() => {
   "use strict";
 
-  let ignored = new Map<string, boolean>();
+  const ignored = new Map<string, boolean>();
 
-  // CSS for color flashing
+  // css for color flashing
   //@ts-ignore
   GM_addStyle(`
     .flashing {
@@ -53,17 +54,17 @@ const showNotification = (title: string, body: string) => {
     .then((permission) =>
       console.log(`Notification permissions are ${permission}`)
     )
-    .catch((err) => console.log(err));
+    .catch((err) => console.error(err));
 
+  // HTML class for tasks in MC
   const taskClassName = "exceptionItem";
 
-  // Stores onclicks for tasks, so an intermediate onclick function can be injected
-  // let onClicks = new Map();
-
+  let counter = 1;
   setInterval(() => {
     const tasks = document.getElementsByClassName(taskClassName);
 
-    if (tasks === undefined || tasks === null) {
+    // Task list is empty
+    if (tasks === undefined || tasks === null || tasks.length == 0) {
       return;
     }
 
@@ -74,20 +75,13 @@ const showNotification = (title: string, body: string) => {
 
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
-      const taskParagraph = task.querySelector(
-        "div > div > div:nth-child(2) > div > p"
-      );
 
-      if (taskParagraph === null) {
-        console.log("Could not find task ID");
-        return;
-      }
+      let taskID = task.getAttribute("data-id");
 
-      const taskID = taskParagraph.textContent;
-
+      // ID was not found, add a new one
       if (taskID === null) {
-        console.log("Could not find task ID");
-        return;
+        taskID = (counter++).toString();
+        task.setAttribute("data-id", taskID);
       }
 
       // Check if this task has been processed already
@@ -96,15 +90,7 @@ const showNotification = (title: string, body: string) => {
         continue;
       }
 
-      // Inject a new onclick that clears the flashing css. Restore and call
-      // the original onclick when the task is click for the first time.
-      // onClicks.set(taskID, task.onclick);
-      // task.onclick = () => {
-      //   task.classList.remove("flashing");
-      //   task.onclick = onClicks[taskID];
-      //   task.onclick();
-      // };
-
+      // OnClick listener to remove the flashing css
       task.addEventListener("click", () => {
         task.classList.remove("flashing");
       });
@@ -114,26 +100,28 @@ const showNotification = (title: string, body: string) => {
 
       // Show a desktop notification
       if (Notification.permission === "granted") {
-        showNotification("New Task", taskID);
+        showNotification("New Task", `Task #${taskID}`);
       } else if (Notification.permission === "denied") {
-        console.log("Notification permissions are denied.");
+        console.error("Notification permissions are denied.");
       } else {
-        // If permissions have not been granted or denied, then try requesting permissions
+        // If permissions have not been granted or denied, then try requesting permissions again
         Notification.requestPermission()
           .then((permission) => {
             if (permission === "granted") {
-              showNotification("New Task", taskID);
+              // Incorrectly says that taskID could be null
+              showNotification("New Task", `Task #${taskID}`);
             }
           })
           .catch((err) => {
-            console.log(err);
+            console.error(err);
           });
       }
 
+      // Set all found tasks to ignored
       ignored.set(taskID, true);
     }
 
-    // If task is false, then it is no longer in MC, so remove it from ignored
+    // If task is false, then it was not found in MC, so remove it from ignored list
     ignored.forEach((present, taskID) => {
       if (!present) {
         ignored.delete(taskID);
@@ -143,5 +131,5 @@ const showNotification = (title: string, body: string) => {
 })();
 
 // FEATURE: Add configuration to disable flashing and/or notifications
-// TODO: log any errors
-// BUG: Iterate over ignored items an check if they are still in queue instead of removing them based on time
+// FEATURE: Track # of completed tasks for the day
+// FEATURE: Space out icons, add tooltips, and make them larger
