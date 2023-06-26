@@ -440,7 +440,51 @@ const getChannelsFromApi = async (apiToken: string) => {
   // return visibleRooms;
 };
 
-const hideRoomWithApi = (apiToken: string, roomId: string): Promise<any> => {
+const hideRoomsWithApi = async (channelIds: string[]) => {
+  let counter = 0;
+  let remainingChannelIds = [...channelIds];
+
+  while (remainingChannelIds.length != 0 && counter < 4) {
+    let promises: Promise<any>[] = [];
+
+    remainingChannelIds.forEach((channelId) => {
+      promises.push(hideRoomWithApi(channelId));
+    });
+
+    await Promise.allSettled(promises);
+    const finishedIndices: number[] = [];
+
+    promises.forEach((promise, index) => {
+      promise
+        .then(() => {
+          finishedIndices.push(index);
+        })
+        .catch(() => {
+          return;
+        });
+    });
+
+    remainingChannelIds = remainingChannelIds.filter((_, index) => {
+      if (index in finishedIndices) {
+        return false;
+      } else {
+        return true;
+      }
+    });
+
+    counter++;
+  }
+};
+
+const hideRoomWithApi = (roomId: string): Promise<any> => {
+  let apiToken = localStorage.getItem("X-Chime-Auth-Token");
+
+  if (!apiToken) {
+    console.error("API token is missing from browser storage.");
+  }
+
+  apiToken = `_aws_wt_session=${apiToken}`;
+
   const roomUpdateUrl = "https://api.express.ue1.app.chime.aws/msg/rooms/";
   // @ts-ignore
   return axios.post(
@@ -455,6 +499,19 @@ const hideRoomWithApi = (apiToken: string, roomId: string): Promise<any> => {
       },
     }
   );
+};
+
+const getSelectedChannelsIdsFromUl = (ul: HTMLUListElement) => {
+  const checkboxes = ul.querySelectorAll("input");
+  const channelIds: string[] = [];
+
+  checkboxes.forEach((checkbox) => {
+    if (checkbox.checked) {
+      channelIds.push(checkbox.value);
+    }
+  });
+
+  return channelIds;
 };
 
 const getChimeManagementButton = () => {
@@ -625,12 +682,27 @@ const createHideChannelsView = () => {
   view.innerHTML =
     '<div class="selector-buttons-container"><span class="span-button" id="select-stations">Stations</span><span class="span-button" id="select-all">All</span><span class="span-button" id="select-none">None</span></div><ul class="chime-room-list" id="hide-channels-chime-room-list"></ul><div class="modal-footer"><div class="confirm-button-container"><span class="span-button" id="confirm-button">confirm</span></div></div>';
 
-  const hideChannelsList = view.querySelector("#hide-channels-chime-room-list");
+  const hideChannelsList = view.querySelector(
+    "#hide-channels-chime-room-list"
+  ) as HTMLUListElement;
 
   if (!hideChannelsList) {
     console.error("Can't find the chime room list for view");
     return view;
   }
+
+  const confirmButton = view.querySelector("#confirm-button");
+
+  if (!confirmButton) {
+    console.error("Can't find confirm button on hide channels view.");
+    return view;
+  }
+
+  confirmButton.addEventListener("click", () => {
+    const channelIds = getSelectedChannelsIdsFromUl(hideChannelsList);
+
+    hideRoomsWithApi(channelIds);
+  });
 
   view.querySelector("#select-stations")?.addEventListener("click", () => {
     selectChannelsInList(hideChannelsList, "stations");
