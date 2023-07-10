@@ -440,37 +440,45 @@ const getChannelsFromApi = async () => {
 const hideRooms = async (channelIds: string[]) => {
   const roomUpdateUrl = "https://api.express.ue1.app.chime.aws/msg/rooms/";
 
-  const types: "POST"[] = [];
-  const urls: string[] = [];
-  const payloads: {}[] = [];
-  const retries: number[] = [];
+  const requests: APIRequest[] = [];
 
   channelIds.forEach((channelId) => {
-    types.push("POST");
-    urls.push(`${roomUpdateUrl}${channelId}`);
-    payloads.push({
-      RoomId: channelId,
-      Visibility: "hidden",
+    requests.push({
+      type: "POST",
+      url: `${roomUpdateUrl}${channelId}`,
+      payload: {
+        RoomId: channelId,
+        Visibility: "hidden",
+      },
+      retries: 5,
     });
-    retries.push(5);
   });
 
-  batchSendApiRequests(types, urls, payloads, retries).then(() => {
+  batchSendApiRequests(requests).then(() => {
     fetchAndAttachChannels();
   });
 };
 
-const batchSendApiRequests = (
-  types: ("GET" | "POST")[],
-  urls: string[],
-  payloads: {}[],
-  retries: number[]
-) => {
+type APIRequest = {
+  type: "GET" | "POST";
+  url: string;
+  payload: {};
+  retries: number;
+};
+
+const batchSendApiRequests = (requests: APIRequest[]) => {
   const promises: Promise<any>[] = [];
 
-  for (let i = 0; i < urls.length; i++) {
-    promises.push(sendApiRequest(types[i], urls[i], payloads[i], retries[i]));
-  }
+  requests.forEach((request) => {
+    promises.push(
+      sendApiRequest(
+        request.type,
+        request.url,
+        request.payload,
+        request.retries
+      )
+    );
+  });
 
   return Promise.allSettled(promises);
 };
