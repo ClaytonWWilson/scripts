@@ -56,6 +56,11 @@ type ChimeRoomNotificationsPreferences = {
   MobileNotificationPreferences: string;
 };
 
+type CheckboxItem = {
+  text: string;
+  value: string;
+};
+
 // @ts-ignore
 GM_addStyle(`
 .modal {
@@ -286,6 +291,11 @@ let markReadView: HTMLDivElement;
 let massInviteView: HTMLDivElement;
 let massMessageView: HTMLDivElement;
 
+const fetchData = async () => {
+  fetchAndAttachChannels();
+  fetchAndAttachContacts();
+};
+
 const fetchAndAttachChannels = async () => {
   let apiToken = localStorage.getItem("X-Chime-Auth-Token");
 
@@ -323,15 +333,32 @@ const fetchAndAttachChannels = async () => {
     return;
   }
 
-  attachRoomsToList(
-    hideChannelsViewList,
-    chimeRooms.filter((room) => {
-      return room.Visibility === "visible";
-    })
-  );
-  attachRoomsToList(markReadViewList, chimeRooms);
-  attachRoomsToList(massInviteViewList, chimeRooms);
-  attachRoomsToList(massMessageViewList, chimeRooms);
+  const visibleRooms = chimeRooms.filter((room) => {
+    return room.Visibility === "visible";
+  });
+
+  const visibleRoomsCheckboxItems: CheckboxItem[] = [];
+
+  visibleRooms.forEach((room) => {
+    visibleRoomsCheckboxItems.push({
+      text: room.Name,
+      value: room.RoomId,
+    });
+  });
+
+  const allRoomsCheckboxItems: CheckboxItem[] = [];
+
+  chimeRooms.forEach((room) => {
+    allRoomsCheckboxItems.push({
+      text: room.Name,
+      value: room.RoomId,
+    });
+  });
+
+  buildChecklist(hideChannelsViewList, visibleRoomsCheckboxItems);
+  buildChecklist(markReadViewList, allRoomsCheckboxItems);
+  buildChecklist(massInviteViewList, allRoomsCheckboxItems);
+  buildChecklist(massMessageViewList, allRoomsCheckboxItems);
 
   const hideChannelsButton = overView.querySelector(
     "#hide-channels-button"
@@ -352,38 +379,40 @@ const fetchAndAttachChannels = async () => {
   enableButton(massMessageButton);
 };
 
-const attachRoomsToList = (ul: HTMLUListElement, rooms: ChimeRoom[]) => {
+const fetchAndAttachContacts = () => {};
+
+const buildChecklist = (ul: HTMLUListElement, items: CheckboxItem[]) => {
   const len = ul.children.length;
   for (let i = 0; i < len; i++) {
     ul.removeChild(ul.children[0]);
   }
-  rooms.forEach((room) => {
-    const roomLi = document.createElement("li");
+  items.forEach((item) => {
+    const li = document.createElement("li");
 
-    const roomLiDiv = document.createElement("div");
-    roomLiDiv.setAttribute("style", "display: flex;");
+    const liDiv = document.createElement("div");
+    liDiv.setAttribute("style", "display: flex;");
 
-    const roomLiInput = document.createElement("input");
-    roomLiInput.setAttribute("type", "checkbox");
-    roomLiInput.setAttribute("name", room.Name);
-    roomLiInput.setAttribute("value", room.RoomId);
+    const liInput = document.createElement("input");
+    liInput.setAttribute("type", "checkbox");
+    liInput.setAttribute("name", item.text);
+    liInput.setAttribute("value", item.value);
 
-    const roomLiSpan = document.createElement("span");
-    roomLiSpan.setAttribute("class", "li-text");
-    roomLiSpan.innerHTML = room.Name;
-    roomLiSpan.addEventListener("click", () => {
-      if (roomLiInput.checked) {
-        roomLiInput.checked = false;
+    const liSpan = document.createElement("span");
+    liSpan.setAttribute("class", "li-text");
+    liSpan.innerHTML = item.text;
+    liSpan.addEventListener("click", () => {
+      if (liInput.checked) {
+        liInput.checked = false;
       } else {
-        roomLiInput.checked = true;
+        liInput.checked = true;
       }
     });
 
-    roomLiDiv.appendChild(roomLiInput);
-    roomLiDiv.appendChild(roomLiSpan);
-    roomLi.appendChild(roomLiDiv);
+    liDiv.appendChild(liInput);
+    liDiv.appendChild(liSpan);
+    li.appendChild(liDiv);
 
-    ul.appendChild(roomLi);
+    ul.appendChild(li);
   });
 };
 
@@ -605,7 +634,7 @@ const createModal = () => {
     return;
   }
 
-  fetchChannelsButton.addEventListener("click", fetchAndAttachChannels);
+  fetchChannelsButton.addEventListener("click", fetchData);
 
   const closeButton = modal.querySelector(".close-button");
 
