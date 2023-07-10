@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Chime-Tweaks
 // @namespace    mailto:eclawils@amazon.com
-// @version      0.1
+// @version      0.2
 // @description  Various tweaks and improvements to Chime Web
 // @author       Clayton Wilson
 // @match        app.chime.aws/*
@@ -255,6 +255,7 @@ GM_addStyle(`
 
 #confirm-button {
   grid-column: 2/3;
+  width: fit-content;
   justify-self: center;
 }
 
@@ -295,7 +296,7 @@ const fetchAndAttachChannels = async () => {
 
   apiToken = `_aws_wt_session=${apiToken}`;
 
-  const chimeRooms = await getChannelsFromApi(apiToken);
+  const chimeRooms = await getChannelsFromApi();
 
   const hideChannelsViewList = hideChannelsView.querySelector(
     "#hide-channels-chime-room-list"
@@ -316,7 +317,9 @@ const fetchAndAttachChannels = async () => {
     !massInviteViewList ||
     !massMessageViewList
   ) {
-    console.error("Can't find one of the channel lists from one of the views");
+    console.error(
+      "Can't find one or more of the channel lists from one of the views"
+    );
     return;
   }
 
@@ -388,7 +391,7 @@ const enableButton = (button: HTMLSpanElement) => {
   button.classList.remove("disabled-button");
 };
 
-const getChannelsFromApi = async (apiToken: string) => {
+const getChannelsFromApi = async () => {
   const roomsUrl = "https://api.express.ue1.app.chime.aws/msg/rooms/";
 
   let next: string | null = "";
@@ -397,15 +400,11 @@ const getChannelsFromApi = async (apiToken: string) => {
   // Keep requesting rooms until all have been retrieved
   while (next !== null && next !== undefined) {
     // @ts-ignore
-    await axios
-      .get(roomsUrl, {
-        headers: {
-          "x-chime-auth-token": apiToken,
-        },
-        params: {
-          "next-token": next,
-        },
-      })
+    await sendApiRequest("GET", roomsUrl, undefined, 5, {
+      params: {
+        "next-token": next,
+      },
+    })
       // @ts-ignore
       .then((res) => {
         console.log(res);
@@ -438,43 +437,51 @@ const getChannelsFromApi = async (apiToken: string) => {
   // return visibleRooms;
 };
 
-const hideRoomsWithApi = async (channelIds: string[]) => {
-  let counter = 0;
-  let remainingChannelIds = [...channelIds];
+const hideRooms = async (channelIds: string[]) => {
+  const roomUpdateUrl = "https://api.express.ue1.app.chime.aws/msg/rooms/";
 
-  while (remainingChannelIds.length != 0 && counter < 4) {
-    let promises: Promise<any>[] = [];
+  const types: "POST"[] = [];
+  const urls: string[] = [];
+  const payloads: {}[] = [];
+  const retries: number[] = [];
 
-    remainingChannelIds.forEach((channelId) => {
-      promises.push(hideRoomWithApi(channelId));
+  channelIds.forEach((channelId) => {
+    types.push("POST");
+    urls.push(`${roomUpdateUrl}${channelId}`);
+    payloads.push({
+      RoomId: channelId,
+      Visibility: "hidden",
     });
+    retries.push(5);
+  });
 
-    await Promise.allSettled(promises);
-    const finishedIndices: number[] = [];
-
-    promises.forEach((promise, index) => {
-      promise
-        .then(() => {
-          finishedIndices.push(index);
-        })
-        .catch(() => {
-          return;
-        });
-    });
-
-    remainingChannelIds = remainingChannelIds.filter((_, index) => {
-      if (index in finishedIndices) {
-        return false;
-      } else {
-        return true;
-      }
-    });
-
-    counter++;
-  }
+  batchSendApiRequests(types, urls, payloads, retries).then(() => {
+    fetchAndAttachChannels();
+  });
 };
 
-const hideRoomWithApi = (roomId: string): Promise<any> => {
+const batchSendApiRequests = (
+  types: ("GET" | "POST")[],
+  urls: string[],
+  payloads: {}[],
+  retries: number[]
+) => {
+  const promises: Promise<any>[] = [];
+
+  for (let i = 0; i < urls.length; i++) {
+    promises.push(sendApiRequest(types[i], urls[i], payloads[i], retries[i]));
+  }
+
+  return Promise.allSettled(promises);
+};
+
+const sendApiRequest = async (
+  type: "GET" | "POST",
+  url: string,
+  payload?: {},
+  retries?: number,
+  options?: {}
+) => {
   let apiToken = localStorage.getItem("X-Chime-Auth-Token");
 
   if (!apiToken) {
@@ -483,20 +490,45 @@ const hideRoomWithApi = (roomId: string): Promise<any> => {
 
   apiToken = `_aws_wt_session=${apiToken}`;
 
-  const roomUpdateUrl = "https://api.express.ue1.app.chime.aws/msg/rooms/";
-  // @ts-ignore
-  return axios.post(
-    `${roomUpdateUrl}${roomId}`,
-    {
-      RoomId: roomId,
-      Visibility: "hidden",
-    },
-    {
-      headers: {
-        "x-chime-auth-token": apiToken,
-      },
+  if (!retries) {
+    retries = 0;
+  }
+
+  let response;
+  let counter = 0;
+
+  while (counter <= retries) {
+    switch (type) {
+      case "GET":
+        // @ts-ignore
+        response = await axios.get(url, {
+          ...options,
+          headers: {
+            "x-chime-auth-token": apiToken,
+          },
+        });
+        break;
+      case "POST":
+        // @ts-ignore
+        response = await axios.post(url, payload, {
+          ...options,
+          headers: {
+            "x-chime-auth-token": apiToken,
+          },
+        });
+        break;
     }
-  );
+
+    const statusCode = response.status;
+
+    if (statusCode > 199 && statusCode < 300) {
+      break;
+    }
+
+    counter++;
+  }
+
+  return response;
 };
 
 const getSelectedChannelsIdsFromUl = (ul: HTMLUListElement) => {
@@ -699,7 +731,7 @@ const createHideChannelsView = () => {
   confirmButton.addEventListener("click", () => {
     const channelIds = getSelectedChannelsIdsFromUl(hideChannelsList);
 
-    hideRoomsWithApi(channelIds);
+    hideRooms(channelIds);
   });
 
   view.querySelector("#select-stations")?.addEventListener("click", () => {
@@ -908,4 +940,5 @@ const mountView = (mountPoint: Element, view: Element) => {
   });
 })();
 
-// FEATURE: Make long operations more interactive
+// FEATURE: Make long operations more informative
+// FEATURE: Load info on open instead of with fetch button
