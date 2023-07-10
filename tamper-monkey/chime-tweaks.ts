@@ -80,9 +80,6 @@ GM_addStyle(`
 }
 
 .modal-content {
-  /*     display: grid; */
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: 3rem 1fr 1fr 1fr 1fr;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -96,25 +93,25 @@ GM_addStyle(`
 }
 
 .modal-top-bar {
-/*   border-bottom: 1px solid black; */
+  border-bottom: 1px solid black;
   width: 100%;
   height: 3rem;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gid-template-rows: 1fr;
+  grid-template-columns: 10% 80% 10%;
 }
 
 #back-button {
   visibility: hidden;
+  width: fit-content;
 }
 
 #fetch-channels-button {
   grid-column: 2/3;
+  width: fit-content;
   margin: auto;
 }
 
 .close-button {
-  /*   float: right; */
   justify-self: right;
   width: 1.5rem;
   height: 1.5rem;
@@ -143,7 +140,8 @@ GM_addStyle(`
   height: 100%;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(10, 45px);
+  grid-template-rows: repeat(5, 45px);
+  row-gap: 1rem;
 }
 
 #hide-channels-button {
@@ -175,11 +173,11 @@ GM_addStyle(`
   user-select: none;
   cursor: pointer;
   border-radius: 0.25rem;
-/*   border: solid 1px green; */
   background-color: lightgray;
-  width: fit-content;
+  width: 15rem;
   height: fit-content;
   padding: 0.25rem;
+  justify-content: center;
 }
 
 .disabled-button {
@@ -909,3 +907,5 @@ const mountView = (mountPoint: Element, view: Element) => {
     characterData: false,
   });
 })();
+
+// FEATURE: Make long operations more interactive
