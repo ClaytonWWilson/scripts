@@ -529,7 +529,7 @@ const inviteContactsToRooms = (contactIds: string[], roomIds: string[]) => {
       requests.push({
         type: "POST",
         url: `https://api.express.ue1.app.chime.aws/msg/rooms/${roomId}/memberships/`,
-        retries: 5,
+        retries: 15,
         payload: {
           RoomId: roomId,
           ProfileId: contactId,
