@@ -56,9 +56,31 @@ type ChimeRoomNotificationsPreferences = {
   MobileNotificationPreferences: string;
 };
 
+type ChimeContact = {
+  id: string;
+  email: string;
+  display_name: string;
+  full_name: string;
+  presence_channel: string;
+  profile_channel: string;
+  personal_phone_number?: null;
+  provisioned_phone_number?: null;
+  license: string;
+  work_talk_account_id: string;
+  aws_account_id: string;
+  protrial_ends_by?: null;
+};
+
 type CheckboxItem = {
   text: string;
   value: string;
+};
+
+type APIRequest = {
+  type: "GET" | "POST";
+  url: string;
+  payload: {};
+  retries: number;
 };
 
 // @ts-ignore
@@ -216,7 +238,7 @@ GM_addStyle(`
 
 .modal-footer {
 /*   border: 2px solid orange; */
-  height: 8rem;
+  height: 9rem;
 }
 
 .modal-hide-channels-view {
@@ -256,6 +278,7 @@ GM_addStyle(`
 /*   border: 2px solid yellow; */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  height: 2rem;
 }
 
 #confirm-button {
@@ -264,9 +287,14 @@ GM_addStyle(`
   justify-self: center;
 }
 
-.user-entry-container {
-/*   border: 2px solid tan; */
-  margin-bottom: .5rem;
+.contacts-list {
+  border: 1px solid gray;
+  padding-left: 1rem;
+  height: 6.5rem;
+  overflow: hidden;
+  overflow-y: scroll;
+  list-style-type: none;
+  margin-bottom: 0.5rem;
 }
 
 .message-entry-container {
@@ -279,8 +307,6 @@ GM_addStyle(`
 #mass-message-input {
   resize: none;
 }
-
-
 `);
 
 let chimeButton: HTMLSpanElement;
@@ -297,15 +323,6 @@ const fetchData = async () => {
 };
 
 const fetchAndAttachChannels = async () => {
-  let apiToken = localStorage.getItem("X-Chime-Auth-Token");
-
-  if (!apiToken) {
-    console.error("API token is missing from browser storage.");
-    return;
-  }
-
-  apiToken = `_aws_wt_session=${apiToken}`;
-
   const chimeRooms = await getChannelsFromApi();
 
   const hideChannelsViewList = hideChannelsView.querySelector(
@@ -379,7 +396,30 @@ const fetchAndAttachChannels = async () => {
   enableButton(massMessageButton);
 };
 
-const fetchAndAttachContacts = () => {};
+const fetchAndAttachContacts = async () => {
+  const massInviteViewContactsList = massInviteView.querySelector(
+    ".contacts-list"
+  ) as HTMLUListElement;
+
+  if (!massInviteViewContactsList) {
+    console.error("Can't find the contacts list on the mass invite view");
+    return;
+  }
+
+  const contactsUrl = "https://api.express.ue1.app.chime.aws/bazl/contacts";
+  const res = await sendApiRequest("GET", contactsUrl, 5, undefined);
+  const contacts: ChimeContact[] = res.data;
+
+  const contactCheckboxItems: CheckboxItem[] = [];
+  contacts.forEach((contact) => {
+    contactCheckboxItems.push({
+      text: contact.display_name,
+      value: contact.id,
+    });
+  });
+
+  buildChecklist(massInviteViewContactsList, contactCheckboxItems);
+};
 
 const buildChecklist = (ul: HTMLUListElement, items: CheckboxItem[]) => {
   const len = ul.children.length;
@@ -429,7 +469,7 @@ const getChannelsFromApi = async () => {
   // Keep requesting rooms until all have been retrieved
   while (next !== null && next !== undefined) {
     // @ts-ignore
-    await sendApiRequest("GET", roomsUrl, undefined, 5, {
+    await sendApiRequest("GET", roomsUrl, 5, undefined, {
       params: {
         "next-token": next,
       },
@@ -488,13 +528,6 @@ const hideRooms = async (channelIds: string[]) => {
   });
 };
 
-type APIRequest = {
-  type: "GET" | "POST";
-  url: string;
-  payload: {};
-  retries: number;
-};
-
 const batchSendApiRequests = (requests: APIRequest[]) => {
   const promises: Promise<any>[] = [];
 
@@ -503,8 +536,8 @@ const batchSendApiRequests = (requests: APIRequest[]) => {
       sendApiRequest(
         request.type,
         request.url,
-        request.payload,
-        request.retries
+        request.retries,
+        request.payload
       )
     );
   });
@@ -515,15 +548,18 @@ const batchSendApiRequests = (requests: APIRequest[]) => {
 const sendApiRequest = async (
   type: "GET" | "POST",
   url: string,
-  payload?: {},
   retries?: number,
+  payload?: {},
   options?: {}
 ) => {
   let apiToken = localStorage.getItem("X-Chime-Auth-Token");
 
   if (!apiToken) {
     console.error("API token is missing from browser storage.");
+    return;
   }
+
+  apiToken = apiToken.replace(/"/g, "");
 
   apiToken = `_aws_wt_session=${apiToken}`;
 
@@ -795,7 +831,7 @@ const createMarkReadView = () => {
   const markReadList = view.querySelector("#mark-read-chime-room-list");
 
   if (!markReadList) {
-    console.error("Can't find the chime room list for hideChannelsView");
+    console.error("Can't find the chime room list for mark read view");
     return view;
   }
 
@@ -818,12 +854,12 @@ const createMassInviteView = () => {
   const view = document.createElement("div");
   view.setAttribute("class", "modal-mass-invite-view");
   view.innerHTML =
-    '<div class="selector-buttons-container"><span class="span-button" id="select-stations">Stations</span><span class="span-button" id="select-all">All</span><span class="span-button" id="select-none">None</span></div><ul class="chime-room-list" id="mass-invite-chime-room-list"></ul><div class="modal-footer"><div class="user-entry-container"><span>Username: </span><input id="username" /></div><div class="confirm-button-container"><span class="span-button" id="confirm-button">confirm</span></div></div>';
+    '<div class="selector-buttons-container"><span class="span-button" id="select-stations">Stations</span><span class="span-button" id="select-all">All</span><span class="span-button" id="select-none">None</span></div><ul class="chime-room-list" id="mass-invite-chime-room-list"></ul><div class="modal-footer"><ul class="contacts-list"></ul><div class="confirm-button-container"><span class="span-button" id="confirm-button">confirm</span></div></div>';
 
   const massInviteList = view.querySelector("#mass-invite-chime-room-list");
 
   if (!massInviteList) {
-    console.error("Can't find the chime room list for hideChannelsView");
+    console.error("Can't find the chime room list for mass invite view");
     return view;
   }
 
@@ -851,7 +887,7 @@ const createMassMessageView = () => {
   const massMessageList = view.querySelector("#mass-message-chime-room-list");
 
   if (!massMessageList) {
-    console.error("Can't find the chime room list for hideChannelsView");
+    console.error("Can't find the chime room list for mass message view");
     return view;
   }
 
