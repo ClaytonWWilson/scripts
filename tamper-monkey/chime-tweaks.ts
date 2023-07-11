@@ -497,16 +497,6 @@ const getChannelsFromApi = async () => {
   }
 
   return chimeRooms;
-
-  // const visibleRooms = [] as ChimeRoom[];
-
-  // for (let i = 0; i < chimeRooms.length; i++) {
-  //   if (chimeRooms[i].Visibility == "hidden") continue;
-
-  //   visibleRooms.push(chimeRooms[i]);
-  // }
-
-  // return visibleRooms;
 };
 
 const hideRooms = async (channelIds: string[]) => {
@@ -529,6 +519,26 @@ const hideRooms = async (channelIds: string[]) => {
   batchSendApiRequests(requests).then(() => {
     fetchAndAttachChannels();
   });
+};
+
+const inviteContactsToRooms = (contactIds: string[], roomIds: string[]) => {
+  let requests: APIRequest[] = [];
+
+  contactIds.forEach((contactId) => {
+    roomIds.forEach((roomId) => {
+      requests.push({
+        type: "POST",
+        url: `https://api.express.ue1.app.chime.aws/msg/rooms/${roomId}/memberships/`,
+        retries: 5,
+        payload: {
+          RoomId: roomId,
+          ProfileId: contactId,
+        },
+      });
+    });
+  });
+
+  return batchSendApiRequests(requests);
 };
 
 const batchSendApiRequests = (requests: APIRequest[]) => {
@@ -811,15 +821,15 @@ const createHideChannelsView = () => {
   });
 
   view.querySelector("#select-stations")?.addEventListener("click", () => {
-    selectChannelsInList(hideChannelsList, "stations");
+    selectItemsInChecklist(hideChannelsList, "stations");
   });
 
   view.querySelector("#select-all")?.addEventListener("click", () => {
-    selectChannelsInList(hideChannelsList, "all");
+    selectItemsInChecklist(hideChannelsList, "all");
   });
 
   view.querySelector("#select-none")?.addEventListener("click", () => {
-    selectChannelsInList(hideChannelsList, "none");
+    selectItemsInChecklist(hideChannelsList, "none");
   });
 
   return view;
@@ -831,23 +841,25 @@ const createMarkReadView = () => {
   view.innerHTML =
     '<div class="selector-buttons-container"><span class="span-button" id="select-stations">Stations</span><span class="span-button" id="select-all">All</span><span class="span-button" id="select-none">None</span></div><ul class="chime-room-list" id="mark-read-chime-room-list"></ul><div class="modal-footer"><div class="confirm-button-container"><span class="span-button" id="confirm-button">confirm</span></div></div>';
 
-  const markReadList = view.querySelector("#mark-read-chime-room-list");
+  const channelList = view.querySelector(
+    "#mark-read-chime-room-list"
+  ) as HTMLUListElement;
 
-  if (!markReadList) {
+  if (!channelList) {
     console.error("Can't find the chime room list for mark read view");
     return view;
   }
 
   view.querySelector("#select-stations")?.addEventListener("click", () => {
-    selectChannelsInList(markReadList, "stations");
+    selectItemsInChecklist(channelList, "stations");
   });
 
   view.querySelector("#select-all")?.addEventListener("click", () => {
-    selectChannelsInList(markReadList, "all");
+    selectItemsInChecklist(channelList, "all");
   });
 
   view.querySelector("#select-none")?.addEventListener("click", () => {
-    selectChannelsInList(markReadList, "none");
+    selectItemsInChecklist(channelList, "none");
   });
 
   return view;
@@ -859,23 +871,49 @@ const createMassInviteView = () => {
   view.innerHTML =
     '<div class="selector-buttons-container"><span class="span-button" id="select-stations">Stations</span><span class="span-button" id="select-all">All</span><span class="span-button" id="select-none">None</span></div><ul class="chime-room-list" id="mass-invite-chime-room-list"></ul><div class="modal-footer"><ul class="contacts-list"></ul><div class="confirm-button-container"><span class="span-button" id="confirm-button">confirm</span></div></div>';
 
-  const massInviteList = view.querySelector("#mass-invite-chime-room-list");
+  const channelList = view.querySelector(
+    "#mass-invite-chime-room-list"
+  ) as HTMLUListElement;
 
-  if (!massInviteList) {
+  if (!channelList) {
     console.error("Can't find the chime room list for mass invite view");
     return view;
   }
 
+  const contactsList = view.querySelector(".contacts-list") as HTMLUListElement;
+
+  if (!contactsList) {
+    console.error("Can't find the contacts list for mark read view");
+    return view;
+  }
+
+  const confirmButton = view.querySelector("#confirm-button");
+
+  if (!confirmButton) {
+    console.error("Can't find confirm button on hide channels view.");
+    return view;
+  }
+
+  confirmButton.addEventListener("click", () => {
+    const channelIds = getSelectedFromChecklist(channelList);
+    const contacts = getSelectedFromChecklist(contactsList);
+
+    inviteContactsToRooms(contacts, channelIds).then(() => {
+      selectItemsInChecklist(channelList, "none");
+      selectItemsInChecklist(contactsList, "none");
+    });
+  });
+
   view.querySelector("#select-stations")?.addEventListener("click", () => {
-    selectChannelsInList(massInviteList, "stations");
+    selectItemsInChecklist(channelList, "stations");
   });
 
   view.querySelector("#select-all")?.addEventListener("click", () => {
-    selectChannelsInList(massInviteList, "all");
+    selectItemsInChecklist(channelList, "all");
   });
 
   view.querySelector("#select-none")?.addEventListener("click", () => {
-    selectChannelsInList(massInviteList, "none");
+    selectItemsInChecklist(channelList, "none");
   });
 
   return view;
@@ -887,7 +925,9 @@ const createMassMessageView = () => {
   view.innerHTML =
     '<div class="selector-buttons-container"><span class="span-button" id="select-stations">Stations</span><span class="span-button" id="select-all">All</span><span class="span-button" id="select-none">None</span></div><ul class="chime-room-list" id="mass-message-chime-room-list"></ul><div class="modal-footer"><div class="message-entry-container"><span>Message:</span><textarea id="mass-message-input" rows=5></textarea></div><div class="confirm-button-container"><span class="span-button" id="confirm-button">confirm</span></div></div>';
 
-  const massMessageList = view.querySelector("#mass-message-chime-room-list");
+  const massMessageList = view.querySelector(
+    "#mass-message-chime-room-list"
+  ) as HTMLUListElement;
 
   if (!massMessageList) {
     console.error("Can't find the chime room list for mass message view");
@@ -895,22 +935,25 @@ const createMassMessageView = () => {
   }
 
   view.querySelector("#select-stations")?.addEventListener("click", () => {
-    selectChannelsInList(massMessageList, "stations");
+    selectItemsInChecklist(massMessageList, "stations");
   });
 
   view.querySelector("#select-all")?.addEventListener("click", () => {
-    selectChannelsInList(massMessageList, "all");
+    selectItemsInChecklist(massMessageList, "all");
   });
 
   view.querySelector("#select-none")?.addEventListener("click", () => {
-    selectChannelsInList(massMessageList, "none");
+    selectItemsInChecklist(massMessageList, "none");
   });
 
   return view;
 };
 
-const selectChannelsInList = (ul: Element, selector: string) => {
-  const checkboxes = ul.querySelectorAll("input");
+const selectItemsInChecklist = (
+  checklistContainer: HTMLUListElement,
+  selector: "all" | "none" | "stations"
+) => {
+  const checkboxes = checklistContainer.querySelectorAll("input");
 
   if (selector === "all") {
     for (const checkbox of checkboxes) {
