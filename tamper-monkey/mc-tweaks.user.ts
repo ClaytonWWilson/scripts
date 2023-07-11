@@ -7,7 +7,7 @@
 // @icon64URL    https://raw.githubusercontent.com/ClaytonWWilson/scripts/master/tamper-monkey/icons/mc-icon-64x64.png
 // @run-at       document-start
 
-// @author       Clayton Wilson (eclawils )
+// @author       Clayton Wilson (eclawils)
 // @namespace    mailto:eclawils@amazon.com
 // @website      https://github.com/ClaytonWWilson
 // @supportURL   https://github.com/ClaytonWWilson/scripts/issues
