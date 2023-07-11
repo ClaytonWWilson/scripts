@@ -421,10 +421,13 @@ const fetchAndAttachContacts = async () => {
   buildChecklist(massInviteViewContactsList, contactCheckboxItems);
 };
 
-const buildChecklist = (ul: HTMLUListElement, items: CheckboxItem[]) => {
-  const len = ul.children.length;
+const buildChecklist = (
+  checklistContainer: HTMLUListElement,
+  items: CheckboxItem[]
+) => {
+  const len = checklistContainer.children.length;
   for (let i = 0; i < len; i++) {
-    ul.removeChild(ul.children[0]);
+    checklistContainer.removeChild(checklistContainer.children[0]);
   }
   items.forEach((item) => {
     const li = document.createElement("li");
@@ -452,7 +455,7 @@ const buildChecklist = (ul: HTMLUListElement, items: CheckboxItem[]) => {
     liDiv.appendChild(liSpan);
     li.appendChild(liDiv);
 
-    ul.appendChild(li);
+    checklistContainer.appendChild(li);
   });
 };
 
@@ -604,17 +607,17 @@ const sendApiRequest = async (
   return response;
 };
 
-const getSelectedChannelsIdsFromUl = (ul: HTMLUListElement) => {
-  const checkboxes = ul.querySelectorAll("input");
-  const channelIds: string[] = [];
+const getSelectedFromChecklist = (checklistContainer: HTMLUListElement) => {
+  const checkboxes = checklistContainer.querySelectorAll("input");
+  const values: string[] = [];
 
   checkboxes.forEach((checkbox) => {
     if (checkbox.checked) {
-      channelIds.push(checkbox.value);
+      values.push(checkbox.value);
     }
   });
 
-  return channelIds;
+  return values;
 };
 
 const getChimeManagementButton = () => {
@@ -802,7 +805,7 @@ const createHideChannelsView = () => {
   }
 
   confirmButton.addEventListener("click", () => {
-    const channelIds = getSelectedChannelsIdsFromUl(hideChannelsList);
+    const channelIds = getSelectedFromChecklist(hideChannelsList);
 
     hideRooms(channelIds);
   });
