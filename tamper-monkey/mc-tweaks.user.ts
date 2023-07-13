@@ -12,8 +12,8 @@
 // @website      https://github.com/ClaytonWWilson
 // @supportURL   https://github.com/ClaytonWWilson/scripts/issues
 
-// @updateURL    https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/mc-tweaks/releases/mc-tweaks.user.js?download=true
-// @downloadURL  https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/mc-tweaks/releases/mc-tweaks.user.js?download=true
+// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/mc-tweaks.user.js
+// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/mc-tweaks.user.js
 
 // @grant        GM_addStyle
 // ==/UserScript==
