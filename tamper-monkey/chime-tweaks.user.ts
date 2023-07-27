@@ -10,8 +10,8 @@
 // @namespace    mailto:eclawils@amazon.com
 // @website      https://github.com/ClaytonWWilson
 // @supportURL   https://github.com/ClaytonWWilson/scripts/issues
-// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.ts
-// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.ts
+// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.js
+// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.js
 // @grant        GM_addStyle
 // ==/UserScript==
 
