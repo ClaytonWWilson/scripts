@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Chime-Tweaks
-// @version      0.2.1
+// @version      0.2.2
 // @description  Various tweaks and improvements to Chime Web
 // @match        app.chime.aws/*
 // @icon         none
