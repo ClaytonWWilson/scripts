@@ -1,14 +1,18 @@
 // ==UserScript==
 // @name         Chime-Tweaks
-// @namespace    mailto:eclawils@amazon.com
-// @version      0.2
+// @version      0.2.1
 // @description  Various tweaks and improvements to Chime Web
-// @author       Clayton Wilson
 // @match        app.chime.aws/*
 // @icon         none
-// @grant        GM_addStyle
 // @require      https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js
-// @run-at   document-end
+// @run-at       document-end
+// @author       Clayton Wilson (eclawils)
+// @namespace    mailto:eclawils@amazon.com
+// @website      https://github.com/ClaytonWWilson
+// @supportURL   https://github.com/ClaytonWWilson/scripts/issues
+// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.ts
+// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.ts
+// @grant        GM_addStyle
 // ==/UserScript==
 
 type ChimeRoom = {
@@ -317,6 +321,14 @@ let markReadView: HTMLDivElement;
 let massInviteView: HTMLDivElement;
 let massMessageView: HTMLDivElement;
 
+const sleep = async (milliseconds: number) => {
+  await new Promise<void>((resolve, reject) => {
+    setTimeout(() => {
+      resolve();
+    }, milliseconds);
+  });
+};
+
 const fetchData = async () => {
   fetchAndAttachChannels();
   fetchAndAttachContacts();
@@ -611,6 +623,8 @@ const sendApiRequest = async (
       break;
     }
 
+    await sleep(1000);
+
     counter++;
   }
 
@@ -850,6 +864,20 @@ const createMarkReadView = () => {
     return view;
   }
 
+  const confirmButton = view.querySelector("#confirm-button");
+
+  if (!confirmButton) {
+    console.error("Can't find confirm button on hide channels view.");
+    return view;
+  }
+
+  confirmButton.addEventListener("click", () => {
+    const channelIds = getSelectedFromChecklist(channelList);
+
+    // Send batch requests for last message max-results=1
+    // use that message id to send batch request for lastMessageRead
+  });
+
   view.querySelector("#select-stations")?.addEventListener("click", () => {
     selectItemsInChecklist(channelList, "stations");
   });
@@ -1061,3 +1089,6 @@ const mountView = (mountPoint: Element, view: Element) => {
 
 // FEATURE: Make long operations more informative
 // FEATURE: Load info on open instead of with fetch button
+
+// TODO: Wait before resending requests so that the API doesn't blow up
+// FEATURE: Make station list searchable
