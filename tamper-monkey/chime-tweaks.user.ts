@@ -1090,5 +1090,4 @@ const mountView = (mountPoint: Element, view: Element) => {
 // FEATURE: Make long operations more informative
 // FEATURE: Load info on open instead of with fetch button
 
-// TODO: Wait before resending requests so that the API doesn't blow up
 // FEATURE: Make station list searchable
