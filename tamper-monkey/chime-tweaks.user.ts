@@ -593,31 +593,42 @@ const sendApiRequest = async (
   }
 
   let response;
+  let statusCode: number;
   let counter = 0;
 
   while (counter <= retries) {
     switch (type) {
       case "GET":
-        // @ts-ignore
-        response = await axios.get(url, {
-          ...options,
-          headers: {
-            "x-chime-auth-token": apiToken,
-          },
-        });
+        try {
+          // @ts-ignore
+          response = await axios.get(url, {
+            ...options,
+            headers: {
+              "x-chime-auth-token": apiToken,
+            },
+          });
+          statusCode = response.status;
+        } catch (error) {
+          // @ts-ignore
+          statusCode = error.response.status;
+        }
         break;
       case "POST":
-        // @ts-ignore
-        response = await axios.post(url, payload, {
-          ...options,
-          headers: {
-            "x-chime-auth-token": apiToken,
-          },
-        });
+        try {
+          // @ts-ignore
+          response = await axios.post(url, payload, {
+            ...options,
+            headers: {
+              "x-chime-auth-token": apiToken,
+            },
+          });
+          statusCode = response.status;
+        } catch (error) {
+          // @ts-ignore
+          statusCode = error.response.status;
+        }
         break;
     }
-
-    const statusCode = response.status;
 
     if (statusCode > 199 && statusCode < 300) {
       break;
