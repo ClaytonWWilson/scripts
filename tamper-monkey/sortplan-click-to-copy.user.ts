@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         SortPlanning-Tweaks
+// @name         SortPlan Click-to-copy
 // @namespace    mailto:eclawils@amazon.com
 // @version      0.1
 // @description  Adds a copy button to the sort planning page to copy plan values
@@ -7,7 +7,12 @@
 // @match        https://na.sort.planning.last-mile.a2z.com/*
 // @icon         none
 // @grant        GM_addStyle
-// @run-at   document-end
+// @run-at       document-end
+// @website      https://github.com/ClaytonWWilson
+// @supportURL   https://github.com/ClaytonWWilson/scripts/issues
+// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/sortplan-click-to-copy.user.js
+// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/sortplan-click-to-copy.user.js
+
 // ==/UserScript==
 
 // @ts-ignore
