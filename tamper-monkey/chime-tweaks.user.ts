@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Chime-Tweaks
-// @version      0.2.2
+// @version      0.2.3
 // @description  Various tweaks and improvements to Chime Web
 // @match        app.chime.aws/*
 // @icon         none
@@ -321,7 +321,7 @@ let markReadView: HTMLDivElement;
 let massInviteView: HTMLDivElement;
 let massMessageView: HTMLDivElement;
 
-const sleep = async (milliseconds: number) => {
+const sleepms = async (milliseconds: number) => {
   await new Promise<void>((resolve, reject) => {
     setTimeout(() => {
       resolve();
@@ -634,7 +634,7 @@ const sendApiRequest = async (
       break;
     }
 
-    await sleep(1000);
+    await sleepms(1000);
 
     counter++;
   }
