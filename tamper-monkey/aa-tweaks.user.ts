@@ -11,7 +11,6 @@
 // ==/UserScript==
 
 (() => {
-  // @ts-ignore
   GM_addStyle(`
   #autoAssignPageId > div:nth-child(7) > div:nth-child(2) > table > tbody > tr > td:nth-child(1) > fieldset > div:nth-child(5) {
     margin-bottom: 50px !important;

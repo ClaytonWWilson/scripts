@@ -34,7 +34,6 @@ const showNotification = (title: string, body: string) => {
   const ignored = new Map<string, boolean>();
 
   // css for color flashing
-  //@ts-ignore
   GM_addStyle(`
     .flashing {
         animation: flashing 2s infinite;

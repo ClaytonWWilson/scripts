@@ -15,9 +15,6 @@
 
 // ==/UserScript==
 
-// @ts-ignore
-// GM_addStyle();
-
 (() => {
   const bodyObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {

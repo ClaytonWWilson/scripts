@@ -87,7 +87,6 @@ type APIRequest = {
   retries: number;
 };
 
-// @ts-ignore
 GM_addStyle(`
 .modal {
   position: fixed;
