@@ -4,7 +4,7 @@ import metablock from "rollup-plugin-userscript-metablock";
 
 const userscriptFiles = [
   "autoct.user.ts",
-  "chime-tweaks.user.ts",
+  "gotham.user.ts",
   "default-wavegroup.user.ts",
   "demand-upload-redirect.user.ts",
   "mc-tweaks.user.ts",
