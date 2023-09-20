@@ -18,16 +18,16 @@ const buildUserscriptConfig = (): RollupOptions[] => {
     return [
       {
         // For uploading to github
-        input: `tamper-monkey/${file}`,
+        input: `tampermonkey/${file}`,
         output: {
-          file: `out/tamper-monkey/public/${fileBaseName}.user.js`,
+          file: `out/tampermonkey/public/${fileBaseName}.user.js`,
           format: "iife",
           sourcemap: true,
         },
         plugins: [
           typescript(),
           metablock({
-            file: `tamper-monkey/${fileBaseName}.user.meta.js`,
+            file: `tampermonkey/${fileBaseName}.user.meta.js`,
             override: {
               updateURL: `https://github.com/ClaytonWWilson/scripts/releases/latest/download/${fileBaseName}.user.js`,
               downloadURL: `https://github.com/ClaytonWWilson/scripts/releases/latest/download/${fileBaseName}.user.js`,
@@ -37,16 +37,16 @@ const buildUserscriptConfig = (): RollupOptions[] => {
       },
       {
         // For uploading internally
-        input: `tamper-monkey/${file}`,
+        input: `tampermonkey/${file}`,
         output: {
-          file: `out/tamper-monkey/internal/${fileBaseName}.user.js`,
+          file: `out/tampermonkey/internal/${fileBaseName}.user.js`,
           format: "iife",
           sourcemap: true,
         },
         plugins: [
           typescript(),
           metablock({
-            file: `tamper-monkey/${fileBaseName}.user.meta.js`,
+            file: `tampermonkey/${fileBaseName}.user.meta.js`,
             override: {
               updateURL: `https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/${fileBaseName}/releases/${fileBaseName}.user.js?download=true`,
               downloadURL: `https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/${fileBaseName}/releases/${fileBaseName}.user.js?download=true`,
