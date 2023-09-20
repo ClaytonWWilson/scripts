@@ -1,20 +1,3 @@
-// ==UserScript==
-// @name         Chime-Tweaks
-// @version      0.2.3
-// @description  Various tweaks and improvements to Chime Web
-// @match        app.chime.aws/*
-// @icon         none
-// @require      https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js
-// @run-at       document-end
-// @author       Clayton Wilson (eclawils)
-// @namespace    mailto:eclawils@amazon.com
-// @website      https://github.com/ClaytonWWilson
-// @supportURL   https://github.com/ClaytonWWilson/scripts/issues
-// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.js
-// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/chime-tweaks.user.js
-// @grant        GM_addStyle
-// ==/UserScript==
-
 type ChimeRoom = {
   ActiveRoomChannel: string;
   BackgroundRoomChannel: string;

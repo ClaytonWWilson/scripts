@@ -5,13 +5,13 @@
 // @description  Various tweaks and improvements to RTW 2.0
 // @author       Clayton Wilson
 // @match        https://na.route.planning.last-mile.a2z.com/*
+// @match        https://na.dispatch.planning.last-mile.a2z.com/*
 // @icon         none
 // @grant        GM_addStyle
 // @run-at   document-start
 // ==/UserScript==
 
 (() => {
-  //@ts-ignore
   GM_addStyle(`
     p.css-d7vd {
       user-select: all !important;

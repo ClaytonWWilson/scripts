@@ -1,11 +1,18 @@
 {
-  "devDependencies": {
-    "@types/node": "^18.15.11",
-    "typescript": "^5.0.4"
+  "scripts": {
+    "build": "rollup --config rollup.config.ts --bundleConfigAsCjs --configPlugin typescript",
+    "watch": "rollup -w --config rollup.config.ts --bundleConfigAsCjs --configPlugin typescript"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.3",
+    "@types/node": "^18.15.11",
+    "rollup-plugin-userscript-metablock": "^0.3.3",
+    "typescript": "^5.0.4",
+    "@types/rollup": "^0.54.0",
     "@types/tampermonkey": "^4.20.3",
+    "tslib": "^2.6.2",
     "ts-node": "^10.9.1"
   },
+  "dependencies": {},
   "license": "MIT"
 }

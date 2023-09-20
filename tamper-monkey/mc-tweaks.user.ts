@@ -1,20 +1,3 @@
-// ==UserScript==
-// @name         MC-Tweaks
-// @version      1.1.1
-// @description  Various tweaks and improvements to Mission Control including task notifications and higher visibility on new tasks
-// @match        https://na-mc-execute.corp.amazon.com/*
-// @iconURL      https://raw.githubusercontent.com/ClaytonWWilson/scripts/master/tamper-monkey/icons/mc-icon-200x200.png
-// @icon64URL    https://raw.githubusercontent.com/ClaytonWWilson/scripts/master/tamper-monkey/icons/mc-icon-64x64.png
-// @run-at       document-start
-// @author       Clayton Wilson (eclawils)
-// @namespace    mailto:eclawils@amazon.com
-// @website      https://github.com/ClaytonWWilson
-// @supportURL   https://github.com/ClaytonWWilson/scripts/issues
-// @updateURL    https://github.com/ClaytonWWilson/scripts/releases/latest/download/mc-tweaks.user.js
-// @downloadURL  https://github.com/ClaytonWWilson/scripts/releases/latest/download/mc-tweaks.user.js
-// @grant        GM_addStyle
-// ==/UserScript==
-
 const MISSION_CONTROL_ICON =
   "https://d3fyhn76ojkw8f.cloudfront.net/static/Website/favicon.ico";
 
