@@ -22,6 +22,10 @@
 - Adds a button to quickly copy the sort plan values.
 - Formatted to paste into DCAP checklist.
 
+### Selectable Replan Text [[Employee Install](https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/selectable-replan-text/releases/selectable-replan-text.user.js?download=true)] [[External Install](https://github.com/ClaytonWWilson/scripts/releases/latest/download/selectable-replan-text.user.js)]
+
+- Makes replan strings selectable, so you're not required to type them out.
+
 ### How to Build
 
 ```
@@ -29,47 +33,25 @@ git clone https://github.com/ClaytonWWilson/scripts.git
 cd scripts
 ```
 
-#### Install Typescript
-
-using npm:
-
-```
-npm install typescript --save-dev
-```
-
-using yarn
-
-```
-yarn add typescript --dev
-```
-
-using pnpm
-
-```
-pnpm add typescript -D
-```
-
-#### Build javascript files
-
-using npm:
+### Then Build jascript files by running
 
 ```
 npm install
-npx tsc
+npm run build
 ```
 
-using yarn:
+or
 
 ```
 yarn
-yarn tsc
+yarn build
 ```
 
-using pnpm:
+or
 
 ```
 pnpm i
-pnpm tsc
+pnpm run build
 ```
 
-#### Built javascript files will be output to the `dist/tampermonkey/` folder
+#### Built javascript files will be output to the `out/tampermonkey/` folder
