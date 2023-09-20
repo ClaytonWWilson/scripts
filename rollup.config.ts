@@ -8,6 +8,7 @@ const userscriptFiles = [
   "default-wavegroup.user.ts",
   "demand-upload-redirect.user.ts",
   "mc-tweaks.user.ts",
+  "selectable-replan-text.user.ts",
   "sortplan-click-to-copy.user.ts",
 ];
 

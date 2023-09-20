@@ -18,5 +18,3 @@
     }
   `);
 })();
-
-// Easy copy/paste dcap numbers
