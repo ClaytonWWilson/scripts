@@ -1,3 +1,5 @@
+import { sleepms } from "../lib/utils";
+
 type ChimeRoom = {
   ActiveRoomChannel: string;
   BackgroundRoomChannel: string;
@@ -302,14 +304,6 @@ let hideChannelsView: HTMLDivElement;
 let markReadView: HTMLDivElement;
 let massInviteView: HTMLDivElement;
 let massMessageView: HTMLDivElement;
-
-const sleepms = async (milliseconds: number) => {
-  await new Promise<void>((resolve, reject) => {
-    setTimeout(() => {
-      resolve();
-    }, milliseconds);
-  });
-};
 
 const fetchData = async () => {
   fetchAndAttachChannels();
