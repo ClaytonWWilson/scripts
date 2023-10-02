@@ -13,7 +13,7 @@ const meta = {
     "https://na.dispatch.planning.last-mile.a2z.com/*",
   ],
   grant: ["GM_addStyle"],
-  "run-at": "document-start",
+  "run-at": "document-end",
   copyright: defaultMeta.copyright,
   homepage: defaultMeta.homepage,
   author: defaultMeta.author,

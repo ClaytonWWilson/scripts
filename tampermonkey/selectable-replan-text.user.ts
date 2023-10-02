@@ -1,20 +1,28 @@
-// ==UserScript==
-// @name         RTW-Tweaks
-// @namespace    mailto:eclawils@amazon.com
-// @version      1.0
-// @description  Various tweaks and improvements to RTW 2.0
-// @author       Clayton Wilson
-// @match        https://na.route.planning.last-mile.a2z.com/*
-// @match        https://na.dispatch.planning.last-mile.a2z.com/*
-// @icon         none
-// @grant        GM_addStyle
-// @run-at   document-start
-// ==/UserScript==
-
 (() => {
   GM_addStyle(`
-    p.css-d7vd {
+    .selectable-text {
       user-select: all !important;
     }
   `);
+
+  const bodyObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === "childList" && mutation.target) {
+        const routingReplanText = document.querySelectorAll(
+          "[mdn-alert-message] > div > p:nth-child(2)"
+        );
+
+        routingReplanText.forEach((textEl) => {
+          textEl.classList.add("selectable-text");
+        });
+      }
+    });
+  });
+
+  bodyObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false,
+  });
 })();
