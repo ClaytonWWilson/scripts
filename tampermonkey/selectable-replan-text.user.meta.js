@@ -5,7 +5,7 @@ const defaultMeta = require("./default-meta");
  */
 const meta = {
   name: "Selectable Replan Text",
-  version: "0.0.1",
+  version: "0.0.2",
   description:
     "Makes replan strings selectable, so you're not required to type them out",
   match: [
