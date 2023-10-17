@@ -1,5 +1,6 @@
 import html from "../lib/jsmarkup";
 import { sleepms } from "../lib/utils";
+import { ElementItem } from "../lib/jsmarkup";
 
 GM_addStyle(`kbd {
   background-color: #eee;
@@ -171,10 +172,46 @@ type PreviousAssignments = {
   AMXL_1?: string[] | null;
 };
 
+type StationCode = string;
+type TBA = string;
+type Cluster =
+  | "CYCLE_0"
+  | "CYCLE_1"
+  | "CYCLE_2"
+  | "SAME_DAY"
+  | "SAME_DAY_SUNRISE"
+  | "SAME_DAY_AM"
+  | "AMXL_1"
+  | "AMXL_2"
+  | "CRASH_1"
+  | "CRASH_2"
+  | "FER_1"
+  | "FER_2"
+  | "AD_HOC_1"
+  | "AD_HOC_2"
+  | "AD_HOC_3";
+
 const RTW1_CT_BASE_URL =
   "https://routingtools-na.amazon.com/clusterTransfer.jsp?stationCode=";
 const STATION_CODE_RE = /^[A-Z]{3}[1-9]{1}$/;
 const TBA_RE = /^TBA[0-9]+$/;
+const CLUSTERS = [
+  "CYCLE_0",
+  "CYCLE_1",
+  "CYCLE_2",
+  "SAME_DAY",
+  "SAME_DAY_SUNRISE",
+  "SAME_DAY_AM",
+  "AMXL_1",
+  "AMXL_2",
+  "CRASH_1",
+  "CRASH_2",
+  "FER_1",
+  "FER_2",
+  "AD_HOC_1",
+  "AD_HOC_2",
+  "AD_HOC_3",
+];
 
 // const openFilePicker = (onFile: (files: FileList) => {}) => {
 //   const input = document.createElement("input");
@@ -297,7 +334,7 @@ const toggleAutoCTVisibility = () => {
 
 // TODO: Add support for cluster in 3rd column
 const parseInputToMap = (text: string) => {
-  const stationMap = new Map<string, string[]>();
+  const stationMap = new Map<StationCode, Map<Cluster, TBA[]>>();
   const lines = text.split("\n");
   const errors: string[] = [];
   for (let i = 0; i < lines.length; i++) {
@@ -305,24 +342,47 @@ const parseInputToMap = (text: string) => {
     if (row === "") continue;
 
     const vals = row.split("\t");
-    const stationCode = vals[0];
-    const tba = vals[1];
+    const stationCode = vals[0].toUpperCase();
+    const tba = vals[1].toUpperCase();
+    let cluster: string | Cluster | undefined = vals[2].toUpperCase();
 
-    if (!stationCode.match(STATION_CODE_RE) || !tba.match(TBA_RE)) {
+    if (!stationCode.match(STATION_CODE_RE)) {
       errors.push(
-        `ERROR: Skipping importing row '${row}' since it doesn't pattern match station code and TBA`
+        `ERROR: Skipping importing row '${row}' since the station code is invalid`
       );
       continue;
     }
 
-    let stationTbas = stationMap.get(stationCode);
-
-    if (!stationTbas) {
-      stationTbas = [];
+    if (!tba.match(TBA_RE)) {
+      errors.push(
+        `ERROR: Skipping importing row '${row}' since the TBA is invalid`
+      );
+      continue;
     }
 
-    stationTbas.push(tba);
-    stationMap.set(stationCode, stationTbas);
+    if (!cluster || !CLUSTERS.find((c) => c === cluster)) {
+      errors.push(
+        `ERROR: Skipping importing row '${row}' since the destination cluster is invalid`
+      );
+      continue;
+    }
+
+    let clusterMap = stationMap.get(stationCode);
+
+    if (!clusterMap) {
+      clusterMap = new Map<Cluster, TBA[]>();
+    }
+
+    let tbaList = clusterMap.get(cluster as Cluster);
+
+    if (!tbaList) {
+      tbaList = [];
+    }
+
+    tbaList.push(tba);
+    clusterMap.set(cluster as Cluster, tbaList);
+
+    stationMap.set(stationCode, clusterMap);
   }
 
   logMessages(
@@ -340,7 +400,9 @@ const parseInputToMap = (text: string) => {
   return stationMap;
 };
 
-const buildPreviewList = (stationMap: Map<string, string[]>) => {
+const buildPreviewList = (
+  stationMap: Map<StationCode, Map<Cluster, string[]>>
+) => {
   const previewList = document.querySelector("#transfer-list");
   if (!previewList) {
     logMessage("ERROR: Can't find the preview list in the DOM");
@@ -357,71 +419,79 @@ const buildPreviewList = (stationMap: Map<string, string[]>) => {
   let index = -1;
   for (let stationTransfer of stationMap.entries()) {
     index++;
-    const stationCode = stationTransfer[0];
-    const tbas = stationTransfer[1];
+    const station = stationTransfer[0];
+    const clusterMap = stationTransfer[1];
 
-    const newJob: Transfer = {
-      station: stationCode,
-      cluster: "",
-      tbas,
-    };
-    state.previews.push(newJob);
+    for (let clusterTransfer of clusterMap.entries()) {
+      const cluster = clusterTransfer[0];
+      const tbas = clusterTransfer[1];
 
-    previewList.appendChild(
-      html([
-        "li",
-        { class: "transfer-li-container" },
-        [
-          ["span", { id: "transfer-station-code" }, stationCode],
-          ["span", { id: "transfer-tba-count" }, `${tbas.length} TBAs`],
+      const newJob: Transfer = {
+        station,
+        cluster,
+        tbas,
+      };
+      state.previews.push(newJob);
+
+      previewList.appendChild(
+        html([
+          "li",
+          { class: "transfer-li-container" },
           [
-            "select",
-            {
-              id: "transfer-dest-selector",
-              datastation: stationCode,
-              datakey: `${index}`,
-              dataselection: "",
-              onchange: (e: Event) => {
-                const target = e.target as HTMLSelectElement | null;
-                if (!target) return;
-
-                const stationCode = target.getAttribute("datastation");
-                const stateIndex = target.getAttribute("datakey");
-                const prevSelection = target.getAttribute("dataselection");
-
-                if (
-                  stationCode === null ||
-                  stateIndex === null ||
-                  prevSelection === null
-                ) {
-                  logMessage("ERROR: Missing required attributes on select");
-                  return;
-                }
-
-                let state = getState();
-                if (!state.previews) {
-                  logMessage(
-                    "ERROR: Localstorage state is inconsistant with DOM"
-                  );
-                  return;
-                }
-
-                state.previews[parseInt(stateIndex)].cluster = target.value;
-                target.setAttribute("dataselection", target.value);
-
-                setState(state);
-              },
-            },
+            ["span", { id: "transfer-station-code" }, station],
+            ["span", { id: "transfer-tba-count" }, `${tbas.length} TBAs`],
             [
-              ["option", {}, []],
-              ["option", {}, "SAME_DAY"],
-              ["option", {}, "SAME_DAY_SUNRISE"],
-              ["option", {}, "SAME_DAY_AM"],
+              "select",
+              {
+                id: "transfer-dest-selector",
+                datastation: station,
+                datakey: `${index}`,
+                dataselection: "",
+                onchange: (e: Event) => {
+                  const target = e.target as HTMLSelectElement | null;
+                  if (!target) return;
+
+                  const stationCode = target.getAttribute("datastation");
+                  const stateIndex = target.getAttribute("datakey");
+                  const prevSelection = target.getAttribute("dataselection");
+
+                  if (
+                    stationCode === null ||
+                    stateIndex === null ||
+                    prevSelection === null
+                  ) {
+                    logMessage("ERROR: Missing required attributes on select");
+                    return;
+                  }
+
+                  let state = getState();
+                  if (!state.previews) {
+                    logMessage(
+                      "ERROR: Localstorage state is inconsistant with DOM"
+                    );
+                    return;
+                  }
+
+                  state.previews[parseInt(stateIndex)].cluster = target.value;
+                  target.setAttribute("dataselection", target.value);
+
+                  setState(state);
+                },
+              },
+              [
+                ...CLUSTERS.map((c) => {
+                  if (cluster === c) {
+                    return ["option", { selected: true }, c] as ElementItem;
+                  } else {
+                    return ["option", {}, c] as ElementItem;
+                  }
+                }),
+              ],
             ],
           ],
-        ],
-      ])
-    );
+        ])
+      );
+    }
   }
 
   setState(state);

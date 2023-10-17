@@ -1,8 +1,8 @@
-type ElementItem =
+export type ElementItem =
   | [keyof HTMLElementTagNameMap, HTMLAttributes, ElementItem[] | string]
   | [string];
 
-type HTMLAttributes = {
+export type HTMLAttributes = {
   [attr: string]: any;
 };
 
