@@ -1,4 +1,5 @@
 import html from "../lib/jsmarkup";
+import { sleepms } from "../lib/utils";
 
 GM_addStyle(`kbd {
   background-color: #eee;
@@ -142,33 +143,61 @@ type LogEntry = {
   severity: "INFO" | "WARNING" | "ERROR";
 };
 
+type ClusterTransferData = {
+  newMRC: string;
+  shipMethodName: "AMZL_US_BULK";
+  selectShipmentType: "DELIVERY";
+  trackingIds: string;
+};
+
+type ClusterTransferResponse = {
+  message: string;
+};
+
+type ClusterTransferParsedMessage = {
+  newManifestRouteCode: string;
+  failedAssignments?: (string | null)[] | null;
+  system: string;
+  previousAssignments: PreviousAssignments;
+  inconsistentTrackingIds?: (string | null)[] | null;
+  user: string;
+  timestamp: string;
+};
+
+type PreviousAssignments = {
+  Same_Auto?: string[] | null;
+  Same_Superzone_Auto?: string[] | null;
+  ADHOC_1?: string[] | null;
+  AMXL_1?: string[] | null;
+};
+
 const RTW1_CT_BASE_URL =
   "https://routingtools-na.amazon.com/clusterTransfer.jsp?stationCode=";
 const STATION_CODE_RE = /^[A-Z]{3}[1-9]{1}$/;
 const TBA_RE = /^TBA[0-9]+$/;
 
-const openFilePicker = (onFile: (files: FileList) => {}) => {
-  const input = document.createElement("input");
+// const openFilePicker = (onFile: (files: FileList) => {}) => {
+//   const input = document.createElement("input");
 
-  input.setAttribute("type", "file");
-  input.setAttribute("accept", "text/csv");
-  input.setAttribute("style", "display: none;");
-  input.addEventListener("change", (e) => {
-    if (!e.target) return;
+//   input.setAttribute("type", "file");
+//   input.setAttribute("accept", "text/csv");
+//   input.setAttribute("style", "display: none;");
+//   input.addEventListener("change", (e) => {
+//     if (!e.target) return;
 
-    const files: FileList | null = (e.target as HTMLInputElement).files;
+//     const files: FileList | null = (e.target as HTMLInputElement).files;
 
-    if (!files) return;
+//     if (!files) return;
 
-    onFile(files);
-  });
+//     onFile(files);
+//   });
 
-  document.body.appendChild(input);
+//   document.body.appendChild(input);
 
-  input.focus();
-  input.click();
-  input.showPicker();
-};
+//   input.focus();
+//   input.click();
+//   input.showPicker();
+// };
 
 const stopAutoCt = () => {
   const state = getState();
@@ -178,14 +207,6 @@ const stopAutoCt = () => {
 
 // GM_registerMenuCommand("Load csv", openFilePicker);
 GM_registerMenuCommand("Stop", stopAutoCt);
-
-const sleep = async (milliseconds: number) => {
-  await new Promise<void>((resolve, _reject) => {
-    setTimeout(() => {
-      resolve();
-    }, milliseconds);
-  });
-};
 
 const logMessage = (
   message: string,
@@ -204,6 +225,21 @@ const logMessage = (
   return logs;
 };
 
+const logMessages = (
+  messages: { message: string; severity?: "INFO" | "WARNING" | "ERROR" }[]
+) => {
+  const logs = getLogs();
+  const newLogs = messages.map((item) => {
+    return {
+      message: item.message,
+      severity: item.severity ? item.severity : "INFO",
+      time: new Date(),
+    } as LogEntry;
+  });
+  logs.push(...newLogs);
+  setLogs(logs);
+};
+
 const getLogs = (): AutoCTLogs => {
   const stringifiedLogs = localStorage.getItem("autoCTLogs");
 
@@ -217,6 +253,7 @@ const getLogs = (): AutoCTLogs => {
   return logs;
 };
 
+// FIXME: Throws an error when storage quota is exceeded
 const setLogs = (logs: AutoCTLogs) => {
   localStorage.setItem("autoCTLogs", JSON.stringify(logs));
 };
@@ -243,57 +280,6 @@ const setState = (state: AutoCTState) => {
   localStorage.setItem("autoCTState", JSON.stringify(state));
 };
 
-// const loadTbasFromCsv = (f: File): Promise<string | ArrayBuffer> => {
-//   return new Promise((resolve, reject) => {
-//     const reader = new FileReader();
-//     reader.addEventListener("load", (e) => {
-//       if (!e.target) return reject();
-//       if (!e.target.result) return reject();
-
-//       resolve(e.target.result);
-//     });
-
-//     reader.readAsText(f);
-//   });
-// };
-
-// const loadTbasIntoState = (csv: string) => {
-//   const stationMap = new Map<string, string[]>();
-//   const lines = csv.split("\n");
-//   lines.forEach((row) => {
-//     const vals = row.split("\t");
-//     const stationCode = vals[0];
-//     const tba = vals[1];
-//     if (!stationCode.match(STATION_CODE_RE) || !tba.match(TBA_RE)) {
-//       logMessage(
-//         `ERROR: Skipping row ${row} since it doesn't pattern match station code and TBA`
-//       );
-//       return;
-//     }
-
-//     let stationData = stationMap.get(stationCode);
-
-//     if (!stationData) {
-//       stationData = [];
-//     }
-
-//     stationData.push(tba);
-//     stationMap.set(stationCode, stationData);
-//   });
-
-//   const state = getState();
-//   stationMap.forEach((tbas, stationCode) => {
-//     const newJob: Transfer = {
-//       station: stationCode,
-//       cluster: "SAME_DAY",
-//       tbas,
-//     };
-
-//     state.jobs.push(newJob);
-//   });
-//   setState(state);
-// };
-
 const toggleAutoCTVisibility = () => {
   const hidableSection = document.querySelector("#hidable-auto-ct-section");
 
@@ -313,18 +299,21 @@ const toggleAutoCTVisibility = () => {
 const parseInputToMap = (text: string) => {
   const stationMap = new Map<string, string[]>();
   const lines = text.split("\n");
-  lines.forEach((row) => {
-    if (row === "") return;
+  const errors: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const row = lines[i];
+    if (row === "") continue;
 
     const vals = row.split("\t");
     const stationCode = vals[0];
     const tba = vals[1];
 
     if (!stationCode.match(STATION_CODE_RE) || !tba.match(TBA_RE)) {
-      logMessage(
+      console.log(stationCode.match(STATION_CODE_RE), tba.match(TBA_RE));
+      errors.push(
         `ERROR: Skipping importing row '${row}' since it doesn't pattern match station code and TBA`
       );
-      return;
+      continue;
     }
 
     let stationTbas = stationMap.get(stationCode);
@@ -335,7 +324,19 @@ const parseInputToMap = (text: string) => {
 
     stationTbas.push(tba);
     stationMap.set(stationCode, stationTbas);
-  });
+  }
+
+  logMessages(
+    errors.map((err) => {
+      return {
+        message: err,
+        severity: "ERROR",
+      };
+    })
+  );
+  // errors.forEach((message) => {
+  //   logMessage(message, "ERROR");
+  // });
 
   return stationMap;
 };
@@ -651,6 +652,93 @@ const attachAutoCT = (parent: Element) => {
   return autoCTMarkup;
 };
 
+function encodeFormData(data: ClusterTransferData) {
+  return Object.entries(data)
+    .map(([key, value]) => {
+      return encodeURIComponent(key) + "=" + encodeURIComponent(value);
+    })
+    .join("&");
+}
+
+function sendClusterTansferRequest(
+  TBAS: string[],
+  station: string,
+  cluster: string
+) {
+  const TBAString = TBAS.join("\r\n");
+  let clusterData: ClusterTransferData = {
+    newMRC: cluster,
+    shipMethodName: "AMZL_US_BULK",
+    selectShipmentType: "DELIVERY",
+    trackingIds: TBAString,
+  };
+  var encodedData = encodeFormData(clusterData);
+
+  GM_xmlhttpRequest({
+    method: "POST",
+    url: "https://routingtools-na.amazon.com/clusterTransfer",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Cookie: "rv_station=" + encodeURIComponent(station), // setting the site cookie header
+    },
+    data: encodedData,
+    onload: function (response) {
+      // Handle Data, should have failed TBAS in reponse
+      if (response.status !== 200) {
+        console.error(response);
+        logMessage(
+          `An error occurred while transferring TBAs at ${station}: ${response.responseText}. These TBAs were affected: ${TBAString}`,
+          "ERROR"
+        );
+        return;
+      }
+
+      const message = JSON.parse(
+        (response.response as ClusterTransferResponse).message
+      ) as ClusterTransferParsedMessage;
+
+      if (
+        message.failedAssignments &&
+        message.failedAssignments.length != 0 &&
+        message.failedAssignments[0] !== null
+      ) {
+        const failedTBAString = message.failedAssignments.join(", ");
+        logMessage(
+          `These TBAs failed to transfer at ${station}: ${failedTBAString}`,
+          "WARNING"
+        );
+      }
+
+      if (
+        message.inconsistentTrackingIds &&
+        message.inconsistentTrackingIds.length !== 0 &&
+        message.inconsistentTrackingIds[0] !== null
+      ) {
+        const inconsistantTBAString =
+          message.inconsistentTrackingIds.join(", ");
+        logMessage(
+          `These TBAs are inconsistant at ${station}: ${inconsistantTBAString}`,
+          "WARNING"
+        );
+      }
+
+      const successfulTBAString = Object.values(message.previousAssignments)
+        .flatMap((val) => val)
+        .filter((val) => val !== null)
+        .join(", ");
+      logMessage(
+        `TBAs successfully transferred at ${station}: ${successfulTBAString}`
+      );
+
+      console.log(response);
+    },
+    onerror: function (error) {
+      // Handle Errors, maybe requesting too quickly? potentially add retries
+      console.log(error);
+    },
+  });
+}
+
 (async () => {
   const bodyObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -675,71 +763,81 @@ const attachAutoCT = (parent: Element) => {
     characterData: false,
   });
 
-  // let state = getState();
+  // const d = {message: {
+  //   newManifestRouteCode: "SAME_DAY",
+  //   failedAssignments: [],
+  // }}
 
-  // // Not running
-  // if (state.status === "IDLE" || state.status === "STOPPED") {
-  //   return;
-  // }
+  let state = getState();
 
-  // // All jobs complete, stop running
-  // if (state.jobs.length === 0) {
-  //   state.status = "IDLE";
-  //   setState(state);
-  //   logMessage("FINISHED");
-  //   return;
-  // }
+  // Not running
+  if (state.status === "IDLE" || state.status === "STOPPED") {
+    return;
+  }
+
+  // All jobs complete, stop running
+  if (state.jobs.length === 0) {
+    state.status = "IDLE";
+    setState(state);
+    logMessage("FINISHED");
+    return;
+  }
 
   // if (getLogs().length === 0) {
   //   logMessage("STARTING");
   // }
 
-  // let currentJob = state.jobs[0];
-  // const stationCTUrl = `${RTW1_CT_BASE_URL}${currentJob.station}`;
+  let currentJob = state.jobs[0];
+  const stationCTUrl = `${RTW1_CT_BASE_URL}${currentJob.station}`;
 
-  // // if (currentJob.transfers.length === 0) {
-  // //   logMessage(
-  // //     `SKIPPING current job at ${currentJob.station} since there are no transfers to perform`
-  // //   );
-  // //   state.jobs.shift();
-  // //   setState(state);
-  // //   location.reload();
-  // //   return;
-  // // }
-
-  // if (location.href !== stationCTUrl) {
-  //   logMessage(`NAVIGATING to ${currentJob.station} at ${stationCTUrl}`);
-  //   location.replace(stationCTUrl);
-  //   return;
-  // }
-
-  // // Transfer TBAs
-  // logMessage(
-  //   `TRANSFERRING ${currentJob.tbas.length} TBAs to ${currentJob.cluster} at ${currentJob.station}`
-  // );
-
-  // await sleep(5000);
-  // // TODO: perform transfer
-  // // TODO: Save errored TBAs
-  // logMessage(
-  //   `COMPLETED TRANSFER of ${currentJob.tbas.length} TBAS to ${currentJob.cluster} at ${currentJob.station}`
-  // );
-
-  // state.jobs.shift();
-  // setState(state);
-
-  // setState(state);
-
-  // const nextJob = state.jobs[0];
-
-  // if (!nextJob) {
-  //   state.status = "IDLE";
+  // if (currentJob.transfers.length === 0) {
+  //   logMessage(
+  //     `SKIPPING current job at ${currentJob.station} since there are no transfers to perform`
+  //   );
+  //   state.jobs.shift();
   //   setState(state);
-  //   logMessage("FINISHED");
+  //   location.reload();
   //   return;
   // }
 
-  // const nextStationCTUrl = `${RTW1_CT_BASE_URL}${nextJob.station}`;
-  // logMessage(`NAVIGATING to ${nextJob.station} at ${nextStationCTUrl}`);
-  // location.replace(nextStationCTUrl);
+  if (location.href !== stationCTUrl) {
+    logMessage(`NAVIGATING to ${currentJob.station} at ${stationCTUrl}`);
+    location.replace(stationCTUrl);
+    return;
+  }
+
+  // Transfer TBAs
+  logMessage(
+    `TRANSFERRING ${currentJob.tbas.length} TBAs to ${currentJob.cluster} at ${currentJob.station}`
+  );
+
+  await sleepms(5000);
+
+  // TODO: perform transfer
+  // TODO: Save errored TBAs
+  sendClusterTansferRequest(
+    currentJob.tbas,
+    currentJob.station,
+    currentJob.cluster
+  );
+
+  logMessage(
+    `COMPLETED TRANSFER of ${currentJob.tbas.length} TBAS to ${currentJob.cluster} at ${currentJob.station}`
+  );
+
+  state.jobs.shift();
+  setState(state);
+
+  const nextJob = state.jobs[0];
+
+  if (!nextJob) {
+    state.status = "IDLE";
+    setState(state);
+    logMessage("FINISHED");
+    return;
+  }
+
+  const nextStationCTUrl = `${RTW1_CT_BASE_URL}${nextJob.station}`;
+  logMessage(`NAVIGATING to ${nextJob.station} at ${nextStationCTUrl}`);
+  location.replace(nextStationCTUrl);
 })();
