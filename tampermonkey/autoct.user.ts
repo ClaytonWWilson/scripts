@@ -309,7 +309,6 @@ const parseInputToMap = (text: string) => {
     const tba = vals[1];
 
     if (!stationCode.match(STATION_CODE_RE) || !tba.match(TBA_RE)) {
-      console.log(stationCode.match(STATION_CODE_RE), tba.match(TBA_RE));
       errors.push(
         `ERROR: Skipping importing row '${row}' since it doesn't pattern match station code and TBA`
       );
@@ -348,9 +347,8 @@ const buildPreviewList = (stationMap: Map<string, string[]>) => {
     return;
   }
 
-  let oldChildren = previewList.children;
-  for (let i = 0; i < oldChildren.length; i++) {
-    previewList.removeChild(oldChildren[i]);
+  while (previewList.children.length > 0) {
+    previewList.removeChild(previewList.children[0]);
   }
 
   let state = getState();
