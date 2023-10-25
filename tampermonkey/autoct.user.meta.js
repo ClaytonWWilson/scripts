@@ -10,9 +10,10 @@ const meta = {
   match: ["https://routingtools-na.amazon.com/clusterTransfer.jsp*"],
   grant: ["GM_addStyle", "GM_registerMenuCommand", "GM_xmlhttpRequest"],
   "run-at": "document-idle",
+  author: "Clayton Wilson (eclawils) and Joshua Frost (josfrost)",
+  connect: ["https://routingtools-na.amazon.com/clusterTransfer.jsp*"],
   copyright: defaultMeta.copyright,
   homepage: defaultMeta.homepage,
-  author: defaultMeta.author,
   namespace: defaultMeta.namespace,
   supportUrl: defaultMeta.supportUrl,
 };

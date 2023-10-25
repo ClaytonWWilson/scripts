@@ -7,6 +7,7 @@ const userscriptFiles = [
   "gotham.user.ts",
   "default-wavegroup.user.ts",
   "demand-upload-redirect.user.ts",
+  "fix-qbar-ssd-blurb.user.ts",
   "mc-tweaks.user.ts",
   "selectable-replan-text.user.ts",
   "sortplan-click-to-copy.user.ts",
