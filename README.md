@@ -17,6 +17,10 @@
 - Automatically redirects to the old upload page.
 - Saves two clicks in the routing process.
 
+### Fix QBar SSD Blurb [[Employee Install](https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/fix-qbar-ssd-blurb/releases/fix-qbar-ssd-blurb.user.js?download=true)] [[External Install](https://github.com/ClaytonWWilson/scripts/releases/latest/download/fix-qbar-ssd-blurb.user.js)]
+
+- Fixes the station blurb button on QBar for SSD.
+
 ### SortPlan Click-to-copy [[Employee Install](https://drive.corp.amazon.com/view/eclawils@/public/scripts/central-ops/sortplan-click-to-copy/releases/sortplan-click-to-copy.user.js?download=true)] [[External Install](https://github.com/ClaytonWWilson/scripts/releases/latest/download/sortplan-click-to-copy.user.js)]
 
 - Adds a button to quickly copy the sort plan values.
