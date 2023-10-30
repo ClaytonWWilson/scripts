@@ -37,7 +37,7 @@ git clone https://github.com/ClaytonWWilson/scripts.git
 cd scripts
 ```
 
-### Then Build jascript files by running
+### Then Build javascript files by running
 
 ```
 npm install
