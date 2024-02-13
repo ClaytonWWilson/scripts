@@ -9,6 +9,7 @@ const userscriptFiles = [
   "demand-upload-redirect.user.ts",
   "fix-qbar-ssd-blurb.user.ts",
   "mc-tweaks.user.ts",
+  "open-stations.user.ts",
   "selectable-replan-text.user.ts",
   "sortplan-click-to-copy.user.ts",
 ];
