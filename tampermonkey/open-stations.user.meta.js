@@ -5,7 +5,7 @@ const defaultMeta = require("./default-meta");
  */
 const meta = {
   name: "Open Stations",
-  version: "0.0.1",
+  version: "0.0.2",
   description: "Opens all the stations",
   match: ["https://w.amazon.com/bin/view/User/Lawrjuli"],
   grant: ["GM_addStyle", "GM_openInTab"],
