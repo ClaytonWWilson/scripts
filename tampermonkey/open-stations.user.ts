@@ -99,7 +99,7 @@ function updateRunButton(
   runButton.disabled = true;
   runButton.addEventListener("click", () => {
     const stations = stationListInput.value.split("\n");
-    if (!stations || stations.length < 4) {
+    if (!stations || stations.length < 1) {
       console.error("No stations found in textbox");
       return;
     }
