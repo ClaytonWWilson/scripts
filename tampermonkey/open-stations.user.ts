@@ -100,7 +100,8 @@ function updateRunButton(
   runButton.addEventListener("click", () => {
     const stations = stationListInput.value
       .split("\n")
-      .map((old) => old.trim());
+      .map((old) => old.trim())
+      .reverse(); // Reverse so that tabs appear in the same order as user inputted.
     if (!stations || stations.length < 1) {
       console.error("No stations found in textbox");
       return;
